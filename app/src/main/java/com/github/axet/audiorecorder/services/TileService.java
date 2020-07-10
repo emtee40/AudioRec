@@ -43,11 +43,12 @@ public class TileService extends android.service.quicksettings.TileService {
         if (AudioApplication.from(this).recording != null) {
             tile.setIcon(Icon.createWithResource(this, R.drawable.ic_stop_black_24dp));
             tile.setLabel(getString(R.string.tile_stop_recording));
+            tile.setState(Tile.STATE_ACTIVE);
         } else {
             tile.setIcon(Icon.createWithResource(this, R.drawable.ic_mic_24dp));
             tile.setLabel(getString(R.string.tile_start_recording));
+            tile.setState(Tile.STATE_INACTIVE);
         }
-        tile.setState(Tile.STATE_ACTIVE);
         tile.updateTile();
     }
 
