@@ -556,8 +556,8 @@ public class RecordingActivity extends AppCompatThemeActivity {
             return;
         }
 
-        RawSamples rs = new RawSamples(f);
-        recording.samplesTime = rs.getSamples() / Sound.getChannels(this);
+        RawSamples rs = new RawSamples(f, recording.getInfo());
+        recording.samplesTime = rs.getSamples() / rs.info.channels;
 
         DisplayMetrics metrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(metrics);
@@ -780,8 +780,8 @@ public class RecordingActivity extends AppCompatThemeActivity {
 
             int playUpdate = PitchView.UPDATE_SPEED * recording.sampleRate / 1000;
 
-            RawSamples rs = new RawSamples(recording.storage.getTempRecording());
-            int len = (int) (rs.getSamples() - editSample * Sound.getChannels(this)); // in samples
+            RawSamples rs = new RawSamples(recording.storage.getTempRecording(), recording.getInfo());
+            int len = (int) (rs.getSamples() - editSample * rs.info.channels); // in samples
 
             final AudioTrack.OnPlaybackPositionUpdateListener listener = new AudioTrack.OnPlaybackPositionUpdateListener() {
                 @Override
@@ -800,7 +800,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
             };
 
             AudioTrack.AudioBuffer buf = new AudioTrack.AudioBuffer(recording.sampleRate, Sound.getOutMode(this), Sound.DEFAULT_AUDIOFORMAT, len);
-            rs.open(editSample * Sound.getChannels(this), buf.len); // len in samples
+            rs.open(editSample * rs.info.channels, buf.len); // len in samples
             int r = rs.read(buf.buffer); // r in samples
             if (r != buf.len)
                 throw new RuntimeException("unable to read data");
@@ -827,8 +827,8 @@ public class RecordingActivity extends AppCompatThemeActivity {
         if (editSample == -1)
             return;
 
-        RawSamples rs = new RawSamples(recording.storage.getTempRecording());
-        rs.trunk((editSample + recording.samplesUpdate) * Sound.getChannels(this));
+        RawSamples rs = new RawSamples(recording.storage.getTempRecording(), recording.getInfo());
+        rs.trunk((editSample + recording.samplesUpdate) * rs.info.channels);
         rs.close();
 
         edit(false, true);

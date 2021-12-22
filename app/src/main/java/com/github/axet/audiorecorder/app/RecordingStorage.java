@@ -16,8 +16,17 @@ import com.github.axet.audiolibrary.encoders.OnFlyEncoding;
 import com.github.axet.audiorecorder.BuildConfig;
 import com.github.axet.audiorecorder.R;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.json.JSONException;
+
+import java.io.File;
+import java.io.IOException;
 import java.nio.ShortBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RecordingStorage {
@@ -35,7 +44,7 @@ public class RecordingStorage {
     public Sound sound;
     public Storage storage;
 
-    public Encoder e;
+    public Encoder e; // recording encoder (onfly or raw data)
 
     public AtomicBoolean interrupt = new AtomicBoolean(); // nio throws ClosedByInterruptException if thread interrupted
     public Thread thread;
@@ -85,8 +94,8 @@ public class RecordingStorage {
         };
 
         if (shared.getBoolean(AudioApplication.PREFERENCE_FLY, false)) {
-            final OnFlyEncoding fly = new OnFlyEncoding(storage, targetUri, getInfo());
             if (e == null) { // do not recreate encoder if on-fly mode enabled
+                final OnFlyEncoding fly = new OnFlyEncoding(storage, targetUri, getInfo());
                 e = new Encoder() {
                     @Override
                     public void encode(short[] buf, int pos, int len) {
@@ -100,8 +109,8 @@ public class RecordingStorage {
                 };
             }
         } else {
-            final RawSamples rs = new RawSamples(storage.getTempRecording());
-            rs.open(samplesTime * Sound.getChannels(context));
+            final RawSamples rs = new RawSamples(storage.getTempRecording(), getInfo());
+            rs.open(samplesTime * rs.info.channels);
             e = new Encoder() {
                 @Override
                 public void encode(short[] buf, int pos, int len) {
