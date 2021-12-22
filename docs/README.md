@@ -34,8 +34,8 @@ For example:
 
   * Big Endian
   * Signed 16-bit PCM
-  * 1 or 2 channels (depend on settings)
-  * Frequincy from settings (16hz to 48hz)
+  * 1 or 2 channels (depends on user settings)
+  * 16hz to 48hz Sample Rate / Frequincy (depends on user settings)
 
 # Adb commands
 
