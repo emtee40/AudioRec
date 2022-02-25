@@ -23,7 +23,7 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Translucent">
-        <service android:name=".services.RecordingService" />
+        <service android:name=".services.RecordingService" android:foregroundServiceType="mediaProjection" />
         <service android:name=".services.EncodingService" />
         <service android:name=".services.ControlsService" />
         <service
