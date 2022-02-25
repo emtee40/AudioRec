@@ -15,6 +15,7 @@
         <item>麥克風</item>
         <item>未處理</item>
         <item>藍牙</item>
+        <item>Internal Audio</item>
     </string-array>
 
     <string-array name="themes_text">

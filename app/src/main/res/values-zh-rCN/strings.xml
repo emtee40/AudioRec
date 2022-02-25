@@ -15,6 +15,7 @@
         <item>话筒</item>
         <item>未处理</item>
         <item>蓝牙</item>
+        <item>Internal Audio</item>
     </string-array>
 
     <string-array name="themes_text">

@@ -20,6 +20,7 @@
         <item>Микрофон</item>
         <item>Необработанный</item>
         <item>Bluetooth</item>
+        <item>Internal Audio</item>
     </string-array>
 
     <string-array name="channels_text">
