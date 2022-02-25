@@ -2,13 +2,13 @@ apply plugin: 'com.android.application'
 apply plugin: 'com.github.axet.dxplugin'
 
 android {
-    compileSdkVersion 29
+    compileSdkVersion 30
     ndkVersion "16.1.4479499" // strip debug symbols
 
     defaultConfig {
         applicationId "com.github.axet.audiorecorder"
         minSdkVersion 9
-        targetSdkVersion 29
+        targetSdkVersion 30
         versionCode 355
         versionName "3.4.5"
     }
