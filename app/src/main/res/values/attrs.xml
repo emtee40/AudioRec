@@ -7,6 +7,7 @@
     <string name="source_default" translatable="false">default</string>
     <string name="source_raw" translatable="false">raw</string>
     <string name="source_bluetooth" translatable="false">bluetooth</string>
+    <string name="source_internal" translatable="false">internal</string>
 
     <string-array name="sample_rate_values" translatable="false">
         <item>48000</item>
@@ -22,6 +23,7 @@
         <item>@string/source_mic</item>
         <item>@string/source_raw</item>
         <item>@string/source_bluetooth</item>
+        <item>@string/source_internal</item>
     </string-array>
 
     <string-array name="themes_values" translatable="false">

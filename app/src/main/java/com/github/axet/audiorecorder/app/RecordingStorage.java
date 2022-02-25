@@ -1,5 +1,6 @@
 package com.github.axet.audiorecorder.app;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.media.AudioRecord;
@@ -71,24 +72,13 @@ public class RecordingStorage {
         samplesUpdateStereo = samplesUpdate * Sound.getChannels(context);
     }
 
-    public void startRecording() {
-        sound.silent();
-
+    public void startRecording(int source) {
         final SharedPreferences shared = android.preference.PreferenceManager.getDefaultSharedPreferences(context);
 
-        int user;
-
-        if (shared.getString(AudioApplication.PREFERENCE_SOURCE, context.getString(R.string.source_mic)).equals(context.getString(R.string.source_raw))) {
-            if (Sound.isUnprocessedSupported(context))
-                user = MediaRecorder.AudioSource.UNPROCESSED;
-            else
-                user = MediaRecorder.AudioSource.VOICE_RECOGNITION;
-        } else {
-            user = MediaRecorder.AudioSource.MIC;
-        }
+        sound.silent();
 
         int[] ss = new int[]{
-                user,
+                source,
                 MediaRecorder.AudioSource.MIC,
                 MediaRecorder.AudioSource.DEFAULT
         };
@@ -124,7 +114,7 @@ public class RecordingStorage {
             };
         }
 
-        final AudioRecord recorder = Sound.createAudioRecorder(context, sampleRate, ss, 0);
+        final AudioRecord recorder = sound.createAudioRecorder(sampleRate, ss, 0);
 
         final Thread old = thread;
         final AtomicBoolean oldb = interrupt;

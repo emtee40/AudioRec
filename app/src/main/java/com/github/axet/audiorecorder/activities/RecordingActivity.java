@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Rect;
 import android.media.AudioFormat;
+import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -63,6 +64,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
     public static final String TAG = RecordingActivity.class.getSimpleName();
 
     public static final int RESULT_START = 1;
+    public static final int RESULT_INTERNAL = 2;
 
     public static final String[] PERMISSIONS_AUDIO = new String[]{
             Manifest.permission.RECORD_AUDIO
@@ -926,6 +928,26 @@ public class RecordingActivity extends AppCompatThemeActivity {
 
     void startRecording() {
         try {
+            final SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(this);
+            String source = shared.getString(AudioApplication.PREFERENCE_SOURCE, getString(R.string.source_mic));
+            int user;
+            if (source.equals(getString(R.string.source_raw))) {
+                if (Sound.isUnprocessedSupported(this))
+                    user = MediaRecorder.AudioSource.UNPROCESSED;
+                else
+                    user = MediaRecorder.AudioSource.VOICE_RECOGNITION;
+            } else if (source.equals(this.getString(R.string.source_internal))) {
+                user = Sound.SOURCE_INTERNAL_AUDIO;
+            } else {
+                user = MediaRecorder.AudioSource.MIC;
+            }
+            if (user == Sound.SOURCE_INTERNAL_AUDIO && !recording.sound.permitted()) {
+                Sound.showInternalAudio(this, RESULT_INTERNAL);
+                return;
+            }
+
+            recording.startRecording(user);
+
             edit(false, true);
             pitch.setOnTouchListener(null);
 
@@ -937,8 +959,6 @@ public class RecordingActivity extends AppCompatThemeActivity {
             setState(getString(R.string.recording_status_recording));
 
             headset(true, true);
-
-            recording.startRecording();
 
             RecordingService.startService(this, Storage.getName(this, recording.targetUri), true, duration);
             ControlsService.hideIcon(this);
@@ -970,6 +990,19 @@ public class RecordingActivity extends AppCompatThemeActivity {
                     Toast.makeText(this, R.string.not_permitted, Toast.LENGTH_SHORT).show();
                     finish();
                 }
+                break;
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        switch (requestCode) {
+            case RESULT_INTERNAL:
+                recording.sound.onActivityResult(resultCode, data);
+                if (recording.sound.permitted())
+                    startRecording();
+                break;
         }
     }
 
