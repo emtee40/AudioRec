@@ -747,7 +747,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
 
         int rate = Integer.parseInt(shared.getString(AudioApplication.PREFERENCE_RATE, ""));
         int m = Sound.getChannels(this);
-        int c = Sound.DEFAULT_AUDIOFORMAT == AudioFormat.ENCODING_PCM_16BIT ? 2 : 1;
+        int c = RawSamples.getBytes(Sound.DEFAULT_AUDIOFORMAT);
 
         long perSec;
 
