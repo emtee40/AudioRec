@@ -566,13 +566,13 @@ public class RecordingActivity extends AppCompatThemeActivity {
 
         int count = pitch.getMaxPitchCount(metrics.widthPixels);
 
-        short[] buf = new short[count * recording.samplesUpdateStereo];
-        long cut = recording.samplesTime * Sound.getChannels(this) - buf.length;
+        AudioTrack.SamplesBuffer buf = new AudioTrack.SamplesBuffer(Sound.DEFAULT_AUDIOFORMAT, count * recording.samplesUpdateStereo);
+        long cut = recording.samplesTime * Sound.getChannels(this) - buf.count;
 
         if (cut < 0)
             cut = 0;
 
-        rs.open(cut, buf.length);
+        rs.open(cut, buf.count);
         int len = rs.read(buf);
         rs.close();
 
@@ -586,7 +586,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
 
         int diff = len - lenUpdate;
         if (diff > 0) {
-            recording.dbBuffer = ShortBuffer.allocate(recording.samplesUpdateStereo);
+            recording.dbBuffer = new AudioTrack.SamplesBuffer(Sound.DEFAULT_AUDIOFORMAT, recording.samplesUpdateStereo);
             recording.dbBuffer.put(buf, lenUpdate, diff);
         }
     }
@@ -1002,7 +1002,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
         switch (requestCode) {
             case RESULT_INTERNAL:
                 if (resultCode == RESULT_OK) {
-                    recording.sound.onActivityResult(resultCode, data);
+                    recording.sound.onActivityResult(data);
                     startRecording();
                 } else {
                     Toast.makeText(this, R.string.not_permitted, Toast.LENGTH_SHORT).show();

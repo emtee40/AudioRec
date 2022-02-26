@@ -3,13 +3,16 @@ package com.github.axet.audiorecorder.app;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.os.Process;
 
+import com.github.axet.androidlibrary.sound.AudioTrack;
 import com.github.axet.audiolibrary.app.RawSamples;
 import com.github.axet.audiolibrary.app.Sound;
 import com.github.axet.audiolibrary.encoders.Encoder;
@@ -23,6 +26,7 @@ import org.json.JSONException;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -57,7 +61,7 @@ public class RecordingStorage {
     public Uri targetUri = null; // output target file 2016-01-01 01.01.01.wav
     public long samplesTime; // how many samples passed for current recording, stereo = samplesTime * 2
 
-    public ShortBuffer dbBuffer = null; // PinchView samples buffer
+    public AudioTrack.SamplesBuffer dbBuffer = null; // PinchView samples buffer
 
     public int pitchTime; // screen width
 
@@ -88,7 +92,7 @@ public class RecordingStorage {
                 final OnFlyEncoding fly = new OnFlyEncoding(storage, targetUri, getInfo());
                 e = new Encoder() {
                     @Override
-                    public void encode(short[] buf, int pos, int len) {
+                    public void encode(AudioTrack.SamplesBuffer buf, int pos, int len) {
                         fly.encode(buf, pos, len);
                     }
 
@@ -103,7 +107,7 @@ public class RecordingStorage {
             rs.open(samplesTime * rs.info.channels);
             e = new Encoder() {
                 @Override
-                public void encode(short[] buf, int pos, int len) {
+                public void encode(AudioTrack.SamplesBuffer buf, int pos, int len) {
                     rs.write(buf, pos, len);
                 }
 
@@ -153,17 +157,34 @@ public class RecordingStorage {
                     int samplesTimeCount = 0;
                     final int samplesTimeUpdate = 1000 * sampleRate / 1000; // how many samples we need to update 'samples'. time clock. every 1000ms.
 
-                    short[] buffer = null;
+                    AudioTrack.SamplesBuffer buffer = null;
 
                     boolean stableRefresh = false;
 
                     while (!interrupt.get()) {
                         synchronized (bufferSizeLock) {
-                            if (buffer == null || buffer.length != bufferSize)
-                                buffer = new short[bufferSize];
+                            if (buffer == null || buffer.size() != bufferSize)
+                                buffer = new AudioTrack.SamplesBuffer(Sound.DEFAULT_AUDIOFORMAT, bufferSize);
                         }
 
-                        int readSize = recorder.read(buffer, 0, buffer.length);
+                        int readSize = -1;
+                        switch (buffer.format) {
+                            case AudioFormat.ENCODING_PCM_8BIT:
+                                break;
+                            case AudioFormat.ENCODING_PCM_16BIT:
+                                readSize = recorder.read(buffer.shorts, 0, buffer.shorts.length);
+                            case Sound.ENCODING_PCM_24BIT_PACKED:
+                                break;
+                            case Sound.ENCODING_PCM_32BIT:
+                                break;
+                            case AudioFormat.ENCODING_PCM_FLOAT:
+                                if (Build.VERSION.SDK_INT >= 23)
+                                    readSize = recorder.read(buffer.floats, 0, buffer.floats.length, AudioRecord.READ_BLOCKING);
+                                break;
+                            default:
+                                throw new RuntimeException("Unknown format");
+                        }
+
                         if (readSize < 0)
                             return;
                         long now = System.currentTimeMillis();
@@ -177,18 +198,18 @@ public class RecordingStorage {
 
                             e.encode(buffer, 0, readSize);
 
-                            short[] dbBuf;
+                            AudioTrack.SamplesBuffer dbBuf;
                             int dbSize;
                             int readSizeUpdate;
                             if (dbBuffer != null) {
-                                ShortBuffer bb = ShortBuffer.allocate(dbBuffer.position() + readSize);
+                                AudioTrack.SamplesBuffer bb = new AudioTrack.SamplesBuffer(Sound.DEFAULT_AUDIOFORMAT, dbBuffer.position + readSize);
                                 dbBuffer.flip();
                                 bb.put(dbBuffer);
                                 bb.put(buffer, 0, readSize);
-                                dbBuf = new short[bb.position()];
-                                dbSize = dbBuf.length;
+                                dbBuf = new AudioTrack.SamplesBuffer(Sound.DEFAULT_AUDIOFORMAT, bb.position);
+                                dbSize = dbBuf.count;
                                 bb.flip();
-                                bb.get(dbBuf, 0, dbBuf.length);
+                                bb.get(dbBuf, 0, dbBuf.count);
                             } else {
                                 dbBuf = buffer;
                                 dbSize = readSize;
@@ -203,7 +224,7 @@ public class RecordingStorage {
                             }
                             int readSizeLen = dbSize - readSizeUpdate;
                             if (readSizeLen > 0) {
-                                dbBuffer = ShortBuffer.allocate(readSizeLen);
+                                dbBuffer = new AudioTrack.SamplesBuffer(Sound.DEFAULT_AUDIOFORMAT, readSizeLen);
                                 dbBuffer.put(dbBuf, readSizeUpdate, readSizeLen);
                             } else {
                                 dbBuffer = null;
