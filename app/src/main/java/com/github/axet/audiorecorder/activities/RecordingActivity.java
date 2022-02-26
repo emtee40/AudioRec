@@ -926,7 +926,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
         editor.commit();
     }
 
-    void startRecording() {
+    boolean startRecording() {
         try {
             final SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(this);
             String source = shared.getString(AudioApplication.PREFERENCE_SOURCE, getString(R.string.source_mic));
@@ -943,7 +943,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
             }
             if (user == Sound.SOURCE_INTERNAL_AUDIO && !recording.sound.permitted()) {
                 Sound.showInternalAudio(this, RESULT_INTERNAL);
-                return;
+                return false;
             }
 
             recording.startRecording(user);
@@ -962,9 +962,11 @@ public class RecordingActivity extends AppCompatThemeActivity {
 
             RecordingService.startService(this, Storage.getName(this, recording.targetUri), true, duration);
             ControlsService.hideIcon(this);
+            return true;
         } catch (RuntimeException e) {
             Toast.Error(RecordingActivity.this, e);
             finish();
+            return false;
         }
     }
 
@@ -999,9 +1001,12 @@ public class RecordingActivity extends AppCompatThemeActivity {
         super.onActivityResult(requestCode, resultCode, data);
         switch (requestCode) {
             case RESULT_INTERNAL:
-                recording.sound.onActivityResult(resultCode, data);
-                if (recording.sound.permitted())
+                if (resultCode == RESULT_OK) {
+                    recording.sound.onActivityResult(resultCode, data);
                     startRecording();
+                } else {
+                    stopRecording(getString(R.string.recording_status_pause));
+                }
                 break;
         }
     }
