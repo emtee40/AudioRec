@@ -7,7 +7,7 @@
             android:summary="/sdcard/some/"
             android:title="@string/pref_storage_title" />
 
-        <ListPreference
+        <com.github.axet.audiorecorder.widgets.RecordingSourcePreferenceCompat
             android:defaultValue="mic"
             android:entries="@array/source_text"
             android:entryValues="@array/source_values"
