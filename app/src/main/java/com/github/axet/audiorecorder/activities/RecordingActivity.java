@@ -1005,7 +1005,8 @@ public class RecordingActivity extends AppCompatThemeActivity {
                     recording.sound.onActivityResult(resultCode, data);
                     startRecording();
                 } else {
-                    stopRecording(getString(R.string.recording_status_pause));
+                    Toast.makeText(this, R.string.not_permitted, Toast.LENGTH_SHORT).show();
+                    finish();
                 }
                 break;
         }
