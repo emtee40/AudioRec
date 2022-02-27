@@ -190,6 +190,10 @@ public class SettingsActivity extends AppCompatSettingsThemeActivity implements 
                     return true;
                 }
             });
+
+            Preference af = pm.findPreference(AudioApplication.PREFERENCE_AUDIOFORMAT);
+            if (Build.VERSION.SDK_INT < 23 && af != null)
+                af.setVisible(false);
         }
 
         @Override
