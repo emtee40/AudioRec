@@ -30,6 +30,13 @@ For example:
   * /sdcard/Android/data/com.github.axet.audiorecorder/files
   * /sdcard/Audio Recorder
 
+# Raw format
+
+  * Signed 16-bit PCM
+  * Big Endian
+  * 1 or 2 channels (depends on user settings). First 2 bytes for left channel, Second 2 bytes for right channel.
+  * 16hz to 48hz Sample Rate / Frequincy (depends on user settings)
+
 # Adb commands
 
     # adb shell am start -n com.github.axet.audiorecorder/.activities.RecordingActivity
