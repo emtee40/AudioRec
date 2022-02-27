@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Rect;
 import android.media.AudioFormat;
+import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -63,6 +64,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
     public static final String TAG = RecordingActivity.class.getSimpleName();
 
     public static final int RESULT_START = 1;
+    public static final int RESULT_INTERNAL = 2;
 
     public static final String[] PERMISSIONS_AUDIO = new String[]{
             Manifest.permission.RECORD_AUDIO
@@ -357,7 +359,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
                         public void onClick(DialogInterface dialog, int which) {
                             File to = new File(d.getCurrentPath(), Storage.getName(RecordingActivity.this, recording.targetUri));
                             recording.targetUri = Uri.fromFile(to);
-                            EncodingService.saveAsWAV(RecordingActivity.this, recording.storage.getTempRecording(), to, recording.getInfo());
+                            EncodingService.saveAsWAV(RecordingActivity.this, recording.storage.getTempRecording(), to, recording.info);
                         }
                     });
                     d.show();
@@ -517,7 +519,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
                     editor.commit();
                 }
                 Log.d(TAG, "create recording at: " + targetUri);
-                app.recording = new RecordingStorage(this, pitch.getPitchTime(), targetUri);
+                app.recording = new RecordingStorage(this, Sound.getAudioFormat(this), pitch.getPitchTime(), targetUri);
             }
             recording = app.recording;
             synchronized (recording.handlers) {
@@ -556,21 +558,21 @@ public class RecordingActivity extends AppCompatThemeActivity {
             return;
         }
 
-        RawSamples rs = new RawSamples(f);
-        recording.samplesTime = rs.getSamples() / Sound.getChannels(this);
+        RawSamples rs = new RawSamples(f, recording.info);
+        recording.samplesTime = rs.getSamples() / rs.info.channels;
 
         DisplayMetrics metrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(metrics);
 
         int count = pitch.getMaxPitchCount(metrics.widthPixels);
 
-        short[] buf = new short[count * recording.samplesUpdateStereo];
-        long cut = recording.samplesTime * Sound.getChannels(this) - buf.length;
+        AudioTrack.SamplesBuffer buf = new AudioTrack.SamplesBuffer(rs.info.format, count * recording.samplesUpdateStereo);
+        long cut = recording.samplesTime * Sound.getChannels(this) - buf.count;
 
         if (cut < 0)
             cut = 0;
 
-        rs.open(cut, buf.length);
+        rs.open(cut, buf.count);
         int len = rs.read(buf);
         rs.close();
 
@@ -584,7 +586,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
 
         int diff = len - lenUpdate;
         if (diff > 0) {
-            recording.dbBuffer = ShortBuffer.allocate(recording.samplesUpdateStereo);
+            recording.dbBuffer = new AudioTrack.SamplesBuffer(rs.info.format, recording.samplesUpdateStereo);
             recording.dbBuffer.put(buf, lenUpdate, diff);
         }
     }
@@ -745,14 +747,14 @@ public class RecordingActivity extends AppCompatThemeActivity {
 
         int rate = Integer.parseInt(shared.getString(AudioApplication.PREFERENCE_RATE, ""));
         int m = Sound.getChannels(this);
-        int c = Sound.DEFAULT_AUDIOFORMAT == AudioFormat.ENCODING_PCM_16BIT ? 2 : 1;
+        int c = RawSamples.getBytes(recording.info.format);
 
         long perSec;
 
         String ext = shared.getString(AudioApplication.PREFERENCE_ENCODING, "");
 
         if (shared.getBoolean(AudioApplication.PREFERENCE_FLY, false)) {
-            perSec = Factory.getEncoderRate(ext, recording.sampleRate);
+            perSec = Factory.getEncoderRate(Sound.getAudioFormat(this), ext, recording.sampleRate);
             try {
                 free = Storage.getFree(this, recording.targetUri);
             } catch (RuntimeException e) { // IllegalArgumentException
@@ -780,8 +782,8 @@ public class RecordingActivity extends AppCompatThemeActivity {
 
             int playUpdate = PitchView.UPDATE_SPEED * recording.sampleRate / 1000;
 
-            RawSamples rs = new RawSamples(recording.storage.getTempRecording());
-            int len = (int) (rs.getSamples() - editSample * Sound.getChannels(this)); // in samples
+            RawSamples rs = new RawSamples(recording.storage.getTempRecording(), recording.info);
+            int len = (int) (rs.getSamples() - editSample * rs.info.channels); // in samples
 
             final AudioTrack.OnPlaybackPositionUpdateListener listener = new AudioTrack.OnPlaybackPositionUpdateListener() {
                 @Override
@@ -799,8 +801,8 @@ public class RecordingActivity extends AppCompatThemeActivity {
                 }
             };
 
-            AudioTrack.AudioBuffer buf = new AudioTrack.AudioBuffer(recording.sampleRate, Sound.getOutMode(this), Sound.DEFAULT_AUDIOFORMAT, len);
-            rs.open(editSample * Sound.getChannels(this), buf.len); // len in samples
+            AudioTrack.AudioBuffer buf = new AudioTrack.AudioBuffer(recording.sampleRate, Sound.getOutMode(this), rs.info.format, len);
+            rs.open(editSample * rs.info.channels, buf.len); // len in samples
             int r = rs.read(buf.buffer); // r in samples
             if (r != buf.len)
                 throw new RuntimeException("unable to read data");
@@ -827,8 +829,8 @@ public class RecordingActivity extends AppCompatThemeActivity {
         if (editSample == -1)
             return;
 
-        RawSamples rs = new RawSamples(recording.storage.getTempRecording());
-        rs.trunk((editSample + recording.samplesUpdate) * Sound.getChannels(this));
+        RawSamples rs = new RawSamples(recording.storage.getTempRecording(), recording.info);
+        rs.trunk((editSample + recording.samplesUpdate) * rs.info.channels);
         rs.close();
 
         edit(false, true);
@@ -924,8 +926,28 @@ public class RecordingActivity extends AppCompatThemeActivity {
         editor.commit();
     }
 
-    void startRecording() {
+    boolean startRecording() {
         try {
+            final SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(this);
+            String source = shared.getString(AudioApplication.PREFERENCE_SOURCE, getString(R.string.source_mic));
+            int user;
+            if (source.equals(getString(R.string.source_raw))) {
+                if (Sound.isUnprocessedSupported(this))
+                    user = MediaRecorder.AudioSource.UNPROCESSED;
+                else
+                    user = MediaRecorder.AudioSource.VOICE_RECOGNITION;
+            } else if (source.equals(this.getString(R.string.source_internal))) {
+                user = Sound.SOURCE_INTERNAL_AUDIO;
+            } else {
+                user = MediaRecorder.AudioSource.MIC;
+            }
+            if (user == Sound.SOURCE_INTERNAL_AUDIO && !recording.sound.permitted()) {
+                Sound.showInternalAudio(this, RESULT_INTERNAL);
+                return false;
+            }
+
+            recording.startRecording(user);
+
             edit(false, true);
             pitch.setOnTouchListener(null);
 
@@ -938,13 +960,13 @@ public class RecordingActivity extends AppCompatThemeActivity {
 
             headset(true, true);
 
-            recording.startRecording();
-
             RecordingService.startService(this, Storage.getName(this, recording.targetUri), true, duration);
             ControlsService.hideIcon(this);
+            return true;
         } catch (RuntimeException e) {
             Toast.Error(RecordingActivity.this, e);
             finish();
+            return false;
         }
     }
 
@@ -970,6 +992,23 @@ public class RecordingActivity extends AppCompatThemeActivity {
                     Toast.makeText(this, R.string.not_permitted, Toast.LENGTH_SHORT).show();
                     finish();
                 }
+                break;
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        switch (requestCode) {
+            case RESULT_INTERNAL:
+                if (resultCode == RESULT_OK) {
+                    recording.sound.onActivityResult(data);
+                    startRecording();
+                } else {
+                    Toast.makeText(this, R.string.not_permitted, Toast.LENGTH_SHORT).show();
+                    finish();
+                }
+                break;
         }
     }
 
@@ -1042,7 +1081,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
         } else {
             done.run();
         }
-        encoding = EncodingService.startEncoding(this, in, recording.targetUri, recording.getInfo());
+        encoding = EncodingService.startEncoding(this, in, recording.targetUri, recording.info);
     }
 
     @Override

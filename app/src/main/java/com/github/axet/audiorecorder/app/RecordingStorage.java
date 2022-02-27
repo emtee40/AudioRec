@@ -1,14 +1,18 @@
 package com.github.axet.audiorecorder.app;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.os.Process;
 
+import com.github.axet.androidlibrary.sound.AudioTrack;
 import com.github.axet.audiolibrary.app.RawSamples;
 import com.github.axet.audiolibrary.app.Sound;
 import com.github.axet.audiolibrary.encoders.Encoder;
@@ -16,8 +20,18 @@ import com.github.axet.audiolibrary.encoders.OnFlyEncoding;
 import com.github.axet.audiorecorder.BuildConfig;
 import com.github.axet.audiorecorder.R;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.json.JSONException;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RecordingStorage {
@@ -35,7 +49,7 @@ public class RecordingStorage {
     public Sound sound;
     public Storage storage;
 
-    public Encoder e;
+    public Encoder e; // recording encoder (onfly or raw data)
 
     public AtomicBoolean interrupt = new AtomicBoolean(); // nio throws ClosedByInterruptException if thread interrupted
     public Thread thread;
@@ -46,12 +60,13 @@ public class RecordingStorage {
     public int samplesUpdateStereo; // samplesUpdate * number of channels
     public Uri targetUri = null; // output target file 2016-01-01 01.01.01.wav
     public long samplesTime; // how many samples passed for current recording, stereo = samplesTime * 2
+    public RawSamples.Info info;
 
-    public ShortBuffer dbBuffer = null; // PinchView samples buffer
+    public AudioTrack.SamplesBuffer dbBuffer = null; // PinchView samples buffer
 
     public int pitchTime; // screen width
 
-    public RecordingStorage(Context context, int pitchTime, Uri targetUri) {
+    public RecordingStorage(Context context, int format, int pitchTime, Uri targetUri) {
         this.context = context;
         this.pitchTime = pitchTime;
         this.targetUri = targetUri;
@@ -60,36 +75,26 @@ public class RecordingStorage {
         sampleRate = Sound.getSampleRate(context);
         samplesUpdate = (int) (pitchTime * sampleRate / 1000f);
         samplesUpdateStereo = samplesUpdate * Sound.getChannels(context);
+        info = new RawSamples.Info(format, sampleRate, Sound.getChannels(context));
     }
 
-    public void startRecording() {
-        sound.silent();
-
+    public void startRecording(int source) {
         final SharedPreferences shared = android.preference.PreferenceManager.getDefaultSharedPreferences(context);
 
-        int user;
-
-        if (shared.getString(AudioApplication.PREFERENCE_SOURCE, context.getString(R.string.source_mic)).equals(context.getString(R.string.source_raw))) {
-            if (Sound.isUnprocessedSupported(context))
-                user = MediaRecorder.AudioSource.UNPROCESSED;
-            else
-                user = MediaRecorder.AudioSource.VOICE_RECOGNITION;
-        } else {
-            user = MediaRecorder.AudioSource.MIC;
-        }
+        sound.silent();
 
         int[] ss = new int[]{
-                user,
+                source,
                 MediaRecorder.AudioSource.MIC,
                 MediaRecorder.AudioSource.DEFAULT
         };
 
         if (shared.getBoolean(AudioApplication.PREFERENCE_FLY, false)) {
-            final OnFlyEncoding fly = new OnFlyEncoding(storage, targetUri, getInfo());
             if (e == null) { // do not recreate encoder if on-fly mode enabled
+                final OnFlyEncoding fly = new OnFlyEncoding(storage, targetUri, info);
                 e = new Encoder() {
                     @Override
-                    public void encode(short[] buf, int pos, int len) {
+                    public void encode(AudioTrack.SamplesBuffer buf, int pos, int len) {
                         fly.encode(buf, pos, len);
                     }
 
@@ -100,11 +105,11 @@ public class RecordingStorage {
                 };
             }
         } else {
-            final RawSamples rs = new RawSamples(storage.getTempRecording());
-            rs.open(samplesTime * Sound.getChannels(context));
+            final RawSamples rs = new RawSamples(storage.getTempRecording(), info);
+            rs.open(samplesTime * rs.info.channels);
             e = new Encoder() {
                 @Override
-                public void encode(short[] buf, int pos, int len) {
+                public void encode(AudioTrack.SamplesBuffer buf, int pos, int len) {
                     rs.write(buf, pos, len);
                 }
 
@@ -115,7 +120,7 @@ public class RecordingStorage {
             };
         }
 
-        final AudioRecord recorder = Sound.createAudioRecorder(context, sampleRate, ss, 0);
+        final AudioRecord recorder = sound.createAudioRecorder(info.format, sampleRate, ss, 0);
 
         final Thread old = thread;
         final AtomicBoolean oldb = interrupt;
@@ -154,17 +159,34 @@ public class RecordingStorage {
                     int samplesTimeCount = 0;
                     final int samplesTimeUpdate = 1000 * sampleRate / 1000; // how many samples we need to update 'samples'. time clock. every 1000ms.
 
-                    short[] buffer = null;
+                    AudioTrack.SamplesBuffer buffer = null;
 
                     boolean stableRefresh = false;
 
                     while (!interrupt.get()) {
                         synchronized (bufferSizeLock) {
-                            if (buffer == null || buffer.length != bufferSize)
-                                buffer = new short[bufferSize];
+                            if (buffer == null || buffer.size() != bufferSize)
+                                buffer = new AudioTrack.SamplesBuffer(info.format, bufferSize);
                         }
 
-                        int readSize = recorder.read(buffer, 0, buffer.length);
+                        int readSize = -1;
+                        switch (buffer.format) {
+                            case AudioFormat.ENCODING_PCM_8BIT:
+                                break;
+                            case AudioFormat.ENCODING_PCM_16BIT:
+                                readSize = recorder.read(buffer.shorts, 0, buffer.shorts.length);
+                            case Sound.ENCODING_PCM_24BIT_PACKED:
+                                break;
+                            case Sound.ENCODING_PCM_32BIT:
+                                break;
+                            case AudioFormat.ENCODING_PCM_FLOAT:
+                                if (Build.VERSION.SDK_INT >= 23)
+                                    readSize = recorder.read(buffer.floats, 0, buffer.floats.length, AudioRecord.READ_BLOCKING);
+                                break;
+                            default:
+                                throw new RuntimeException("Unknown format");
+                        }
+
                         if (readSize < 0)
                             return;
                         long now = System.currentTimeMillis();
@@ -178,18 +200,18 @@ public class RecordingStorage {
 
                             e.encode(buffer, 0, readSize);
 
-                            short[] dbBuf;
+                            AudioTrack.SamplesBuffer dbBuf;
                             int dbSize;
                             int readSizeUpdate;
                             if (dbBuffer != null) {
-                                ShortBuffer bb = ShortBuffer.allocate(dbBuffer.position() + readSize);
+                                AudioTrack.SamplesBuffer bb = new AudioTrack.SamplesBuffer(info.format, dbBuffer.position + readSize);
                                 dbBuffer.flip();
                                 bb.put(dbBuffer);
                                 bb.put(buffer, 0, readSize);
-                                dbBuf = new short[bb.position()];
-                                dbSize = dbBuf.length;
+                                dbBuf = new AudioTrack.SamplesBuffer(info.format, bb.position);
+                                dbSize = dbBuf.count;
                                 bb.flip();
-                                bb.get(dbBuf, 0, dbBuf.length);
+                                bb.get(dbBuf, 0, dbBuf.count);
                             } else {
                                 dbBuf = buffer;
                                 dbSize = readSize;
@@ -204,7 +226,7 @@ public class RecordingStorage {
                             }
                             int readSizeLen = dbSize - readSizeUpdate;
                             if (readSizeLen > 0) {
-                                dbBuffer = ShortBuffer.allocate(readSizeLen);
+                                dbBuffer = new AudioTrack.SamplesBuffer(info.format, readSizeLen);
                                 dbBuffer.put(dbBuf, readSizeUpdate, readSizeLen);
                             } else {
                                 dbBuffer = null;
@@ -275,10 +297,6 @@ public class RecordingStorage {
             thread = null;
         }
         sound.unsilent();
-    }
-
-    public RawSamples.Info getInfo() {
-        return new RawSamples.Info(sampleRate, Sound.getChannels(context));
     }
 
     // calcuale buffer length dynamically, this way we can reduce thread cycles when activity in background

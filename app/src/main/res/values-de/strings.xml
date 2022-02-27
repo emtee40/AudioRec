@@ -15,6 +15,7 @@
         <item>Mikrofon</item>
         <item>Unprocessed</item>
         <item>Bluetooth</item>
+        <item>Internal Audio</item>
     </string-array>
 
     <string-array name="themes_text">

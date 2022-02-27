@@ -86,9 +86,8 @@ public class BluetoothReceiver extends BroadcastReceiver {
         String a = intent.getAction();
         if (a == null)
             return;
-        if (bluetoothSource && a.equals(BluetoothDevice.ACTION_ACL_CONNECTED)) {
+        if (bluetoothSource && a.equals(BluetoothDevice.ACTION_ACL_CONNECTED))
             handler.postDelayed(connected, CONNECT_DELAY);
-        }
         if (bluetoothSource && a.equals(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED)) {
             int state = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1);
             switch (state) {

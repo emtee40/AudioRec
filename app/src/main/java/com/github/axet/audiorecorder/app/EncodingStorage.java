@@ -140,7 +140,7 @@ public class EncodingStorage extends HashMap<File, EncodingStorage.Info> {
         for (File in : keySet()) {
             EncodingStorage.Info info = get(in);
             final OnFlyEncoding fly = new OnFlyEncoding(this.storage, info.targetUri, info.info);
-            encoder = new FileEncoder(storage.getContext(), in, fly);
+            encoder = new FileEncoder(storage.getContext(), in, info.info, fly);
             filters(encoder, info.info);
             encoding(encoder, fly, info.info, new Runnable() {
                 @Override
@@ -208,7 +208,7 @@ public class EncodingStorage extends HashMap<File, EncodingStorage.Info> {
 
     public void encoding(File in, Uri targetUri, RawSamples.Info info) {
         OnFlyEncoding fly = new OnFlyEncoding(storage, targetUri, info);
-        encoder = new FileEncoder(storage.getContext(), in, fly);
+        encoder = new FileEncoder(storage.getContext(), in, info, fly);
         filters(encoder, info);
         encoding(encoder, fly, info, new Runnable() {
             @Override
@@ -220,7 +220,7 @@ public class EncodingStorage extends HashMap<File, EncodingStorage.Info> {
 
     public void saveAsWAV(File in, File out, RawSamples.Info info) {
         OnFlyEncoding fly = new OnFlyEncoding(storage, out, info);
-        encoder = new FileEncoder(storage.getContext(), in, fly);
+        encoder = new FileEncoder(storage.getContext(), in, info, fly);
         encoding(encoder, fly, info, new Runnable() {
             @Override
             public void run() {

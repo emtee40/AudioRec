@@ -15,6 +15,7 @@
         <item>Mikrofonoa</item>
         <item>Prozesatu gabea</item>
         <item>Bluetooth</item>
+        <item>Internal Audio</item>
     </string-array>
 
     <string-array name="themes_text">
