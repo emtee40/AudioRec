@@ -519,7 +519,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
                     editor.commit();
                 }
                 Log.d(TAG, "create recording at: " + targetUri);
-                app.recording = new RecordingStorage(this, pitch.getPitchTime(), targetUri);
+                app.recording = new RecordingStorage(this, Sound.getAudioFormat(this), pitch.getPitchTime(), targetUri);
             }
             recording = app.recording;
             synchronized (recording.handlers) {
@@ -754,7 +754,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
         String ext = shared.getString(AudioApplication.PREFERENCE_ENCODING, "");
 
         if (shared.getBoolean(AudioApplication.PREFERENCE_FLY, false)) {
-            perSec = Factory.getEncoderRate(ext, recording.sampleRate);
+            perSec = Factory.getEncoderRate(Sound.getAudioFormat(this), ext, recording.sampleRate);
             try {
                 free = Storage.getFree(this, recording.targetUri);
             } catch (RuntimeException e) { // IllegalArgumentException

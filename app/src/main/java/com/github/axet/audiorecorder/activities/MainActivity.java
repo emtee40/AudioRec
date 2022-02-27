@@ -40,6 +40,7 @@ import com.github.axet.androidlibrary.widgets.ErrorDialog;
 import com.github.axet.androidlibrary.widgets.OpenFileDialog;
 import com.github.axet.androidlibrary.widgets.SearchView;
 import com.github.axet.audiolibrary.app.RawSamples;
+import com.github.axet.audiolibrary.app.Sound;
 import com.github.axet.audiolibrary.encoders.FormatWAV;
 import com.github.axet.audiorecorder.R;
 import com.github.axet.audiorecorder.app.AudioApplication;
@@ -663,7 +664,7 @@ public class MainActivity extends AppCompatThemeActivity {
     void updateHeader() {
         Uri uri = storage.getStoragePath();
         long free = Storage.getFree(this, uri);
-        long sec = Storage.average(this, free);
+        long sec = Storage.average(this, Sound.getAudioFormat(this), free);
         TextView text = (TextView) findViewById(R.id.space_left);
         text.setText(AudioApplication.formatFree(this, free, sec));
     }

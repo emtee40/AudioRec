@@ -6,6 +6,8 @@ import android.content.res.TypedArray;
 import android.os.Build;
 import android.preference.PreferenceManager;
 import android.support.v7.preference.ListPreference;
+import android.support.v7.preference.ListPreferenceDialogFragmentCompat;
+import android.support.v7.preference.PreferenceViewHolder;
 import android.util.AttributeSet;
 
 import com.github.axet.audiolibrary.app.Sound;

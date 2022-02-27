@@ -66,7 +66,7 @@ public class RecordingStorage {
 
     public int pitchTime; // screen width
 
-    public RecordingStorage(Context context, int pitchTime, Uri targetUri) {
+    public RecordingStorage(Context context, int format, int pitchTime, Uri targetUri) {
         this.context = context;
         this.pitchTime = pitchTime;
         this.targetUri = targetUri;
@@ -75,7 +75,7 @@ public class RecordingStorage {
         sampleRate = Sound.getSampleRate(context);
         samplesUpdate = (int) (pitchTime * sampleRate / 1000f);
         samplesUpdateStereo = samplesUpdate * Sound.getChannels(context);
-        info = new RawSamples.Info(sampleRate, Sound.getChannels(context));
+        info = new RawSamples.Info(format, sampleRate, Sound.getChannels(context));
     }
 
     public void startRecording(int source) {

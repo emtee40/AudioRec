@@ -27,6 +27,7 @@ import com.github.axet.androidlibrary.services.PersistentService;
 import com.github.axet.androidlibrary.widgets.NotificationChannelCompat;
 import com.github.axet.androidlibrary.widgets.RemoteNotificationCompat;
 import com.github.axet.androidlibrary.widgets.RemoteViewsCompat;
+import com.github.axet.audiolibrary.app.Sound;
 import com.github.axet.audiolibrary.app.Storage;
 import com.github.axet.audiorecorder.R;
 import com.github.axet.audiorecorder.activities.MainActivity;
@@ -128,7 +129,7 @@ public class ControlsService extends PersistentService {
                         title = getString(R.string.app_name);
                         Uri f = storage.getStoragePath();
                         long free = Storage.getFree(context, f);
-                        long sec = Storage.average(context, free);
+                        long sec = Storage.average(context, Sound.getAudioFormat(context), free);
                         text = AudioApplication.formatFree(context, free, sec);
                         builder = new RemoteNotificationCompat.Low(context, R.layout.notifictaion);
                         builder.setViewVisibility(R.id.notification_record, View.VISIBLE);

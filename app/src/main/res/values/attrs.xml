@@ -26,6 +26,16 @@
         <item>@string/source_internal</item>
     </string-array>
 
+    <string-array name="audioformat_text">
+        <item>16-bit PCM</item>
+        <item>24-bit PCM (float)</item>
+    </string-array>
+
+    <string-array name="audioformat_values" translatable="false">
+        <item>16</item>
+        <item>float</item>
+    </string-array>
+
     <string-array name="themes_values" translatable="false">
         <item>@string/Theme_Light</item>
         <item>@string/Theme_Dark</item>

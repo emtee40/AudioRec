@@ -99,7 +99,7 @@ public class SettingsActivity extends AppCompatSettingsThemeActivity implements 
             storage.migrateLocalStorageDialog(this);
         if (key.equals(AudioApplication.PREFERENCE_RATE)) {
             int sampleRate = Integer.parseInt(sharedPreferences.getString(AudioApplication.PREFERENCE_RATE, ""));
-            if (sampleRate != Sound.getValidRecordRate(Sound.getInMode(this), sampleRate))
+            if (sampleRate != Sound.getValidRecordRate(Sound.getAudioFormat(this), Sound.getInMode(this), sampleRate))
                 Toast.Text(this, "Not supported Hz");
         }
     }
@@ -163,6 +163,7 @@ public class SettingsActivity extends AppCompatSettingsThemeActivity implements 
             bindPreferenceSummaryToValue(pm.findPreference(AudioApplication.PREFERENCE_CHANNELS));
             bindPreferenceSummaryToValue(pm.findPreference(AudioApplication.PREFERENCE_FORMAT));
             bindPreferenceSummaryToValue(pm.findPreference(AudioApplication.PREFERENCE_VOLUME));
+            bindPreferenceSummaryToValue(pm.findPreference(AudioApplication.PREFERENCE_AUDIOFORMAT));
 
             StoragePathPreferenceCompat s = (StoragePathPreferenceCompat) pm.findPreference(AudioApplication.PREFERENCE_STORAGE);
             s.setStorage(new Storage(getContext()));
