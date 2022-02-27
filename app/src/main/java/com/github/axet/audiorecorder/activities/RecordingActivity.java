@@ -359,7 +359,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
                         public void onClick(DialogInterface dialog, int which) {
                             File to = new File(d.getCurrentPath(), Storage.getName(RecordingActivity.this, recording.targetUri));
                             recording.targetUri = Uri.fromFile(to);
-                            EncodingService.saveAsWAV(RecordingActivity.this, recording.storage.getTempRecording(), to, recording.getInfo());
+                            EncodingService.saveAsWAV(RecordingActivity.this, recording.storage.getTempRecording(), to, recording.info);
                         }
                     });
                     d.show();
@@ -558,7 +558,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
             return;
         }
 
-        RawSamples rs = new RawSamples(f, recording.getInfo());
+        RawSamples rs = new RawSamples(f, recording.info);
         recording.samplesTime = rs.getSamples() / rs.info.channels;
 
         DisplayMetrics metrics = new DisplayMetrics();
@@ -566,7 +566,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
 
         int count = pitch.getMaxPitchCount(metrics.widthPixels);
 
-        AudioTrack.SamplesBuffer buf = new AudioTrack.SamplesBuffer(Sound.DEFAULT_AUDIOFORMAT, count * recording.samplesUpdateStereo);
+        AudioTrack.SamplesBuffer buf = new AudioTrack.SamplesBuffer(rs.info.format, count * recording.samplesUpdateStereo);
         long cut = recording.samplesTime * Sound.getChannels(this) - buf.count;
 
         if (cut < 0)
@@ -586,7 +586,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
 
         int diff = len - lenUpdate;
         if (diff > 0) {
-            recording.dbBuffer = new AudioTrack.SamplesBuffer(Sound.DEFAULT_AUDIOFORMAT, recording.samplesUpdateStereo);
+            recording.dbBuffer = new AudioTrack.SamplesBuffer(rs.info.format, recording.samplesUpdateStereo);
             recording.dbBuffer.put(buf, lenUpdate, diff);
         }
     }
@@ -747,7 +747,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
 
         int rate = Integer.parseInt(shared.getString(AudioApplication.PREFERENCE_RATE, ""));
         int m = Sound.getChannels(this);
-        int c = RawSamples.getBytes(Sound.DEFAULT_AUDIOFORMAT);
+        int c = RawSamples.getBytes(recording.info.format);
 
         long perSec;
 
@@ -782,7 +782,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
 
             int playUpdate = PitchView.UPDATE_SPEED * recording.sampleRate / 1000;
 
-            RawSamples rs = new RawSamples(recording.storage.getTempRecording(), recording.getInfo());
+            RawSamples rs = new RawSamples(recording.storage.getTempRecording(), recording.info);
             int len = (int) (rs.getSamples() - editSample * rs.info.channels); // in samples
 
             final AudioTrack.OnPlaybackPositionUpdateListener listener = new AudioTrack.OnPlaybackPositionUpdateListener() {
@@ -801,7 +801,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
                 }
             };
 
-            AudioTrack.AudioBuffer buf = new AudioTrack.AudioBuffer(recording.sampleRate, Sound.getOutMode(this), Sound.DEFAULT_AUDIOFORMAT, len);
+            AudioTrack.AudioBuffer buf = new AudioTrack.AudioBuffer(recording.sampleRate, Sound.getOutMode(this), rs.info.format, len);
             rs.open(editSample * rs.info.channels, buf.len); // len in samples
             int r = rs.read(buf.buffer); // r in samples
             if (r != buf.len)
@@ -829,7 +829,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
         if (editSample == -1)
             return;
 
-        RawSamples rs = new RawSamples(recording.storage.getTempRecording(), recording.getInfo());
+        RawSamples rs = new RawSamples(recording.storage.getTempRecording(), recording.info);
         rs.trunk((editSample + recording.samplesUpdate) * rs.info.channels);
         rs.close();
 
@@ -1081,7 +1081,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
         } else {
             done.run();
         }
-        encoding = EncodingService.startEncoding(this, in, recording.targetUri, recording.getInfo());
+        encoding = EncodingService.startEncoding(this, in, recording.targetUri, recording.info);
     }
 
     @Override

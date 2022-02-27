@@ -60,6 +60,7 @@ public class RecordingStorage {
     public int samplesUpdateStereo; // samplesUpdate * number of channels
     public Uri targetUri = null; // output target file 2016-01-01 01.01.01.wav
     public long samplesTime; // how many samples passed for current recording, stereo = samplesTime * 2
+    public RawSamples.Info info;
 
     public AudioTrack.SamplesBuffer dbBuffer = null; // PinchView samples buffer
 
@@ -74,6 +75,7 @@ public class RecordingStorage {
         sampleRate = Sound.getSampleRate(context);
         samplesUpdate = (int) (pitchTime * sampleRate / 1000f);
         samplesUpdateStereo = samplesUpdate * Sound.getChannels(context);
+        info = new RawSamples.Info(sampleRate, Sound.getChannels(context));
     }
 
     public void startRecording(int source) {
@@ -89,7 +91,7 @@ public class RecordingStorage {
 
         if (shared.getBoolean(AudioApplication.PREFERENCE_FLY, false)) {
             if (e == null) { // do not recreate encoder if on-fly mode enabled
-                final OnFlyEncoding fly = new OnFlyEncoding(storage, targetUri, getInfo());
+                final OnFlyEncoding fly = new OnFlyEncoding(storage, targetUri, info);
                 e = new Encoder() {
                     @Override
                     public void encode(AudioTrack.SamplesBuffer buf, int pos, int len) {
@@ -103,7 +105,7 @@ public class RecordingStorage {
                 };
             }
         } else {
-            final RawSamples rs = new RawSamples(storage.getTempRecording(), getInfo());
+            final RawSamples rs = new RawSamples(storage.getTempRecording(), info);
             rs.open(samplesTime * rs.info.channels);
             e = new Encoder() {
                 @Override
@@ -118,7 +120,7 @@ public class RecordingStorage {
             };
         }
 
-        final AudioRecord recorder = sound.createAudioRecorder(sampleRate, ss, 0);
+        final AudioRecord recorder = sound.createAudioRecorder(info.format, sampleRate, ss, 0);
 
         final Thread old = thread;
         final AtomicBoolean oldb = interrupt;
@@ -164,7 +166,7 @@ public class RecordingStorage {
                     while (!interrupt.get()) {
                         synchronized (bufferSizeLock) {
                             if (buffer == null || buffer.size() != bufferSize)
-                                buffer = new AudioTrack.SamplesBuffer(Sound.DEFAULT_AUDIOFORMAT, bufferSize);
+                                buffer = new AudioTrack.SamplesBuffer(info.format, bufferSize);
                         }
 
                         int readSize = -1;
@@ -202,11 +204,11 @@ public class RecordingStorage {
                             int dbSize;
                             int readSizeUpdate;
                             if (dbBuffer != null) {
-                                AudioTrack.SamplesBuffer bb = new AudioTrack.SamplesBuffer(Sound.DEFAULT_AUDIOFORMAT, dbBuffer.position + readSize);
+                                AudioTrack.SamplesBuffer bb = new AudioTrack.SamplesBuffer(info.format, dbBuffer.position + readSize);
                                 dbBuffer.flip();
                                 bb.put(dbBuffer);
                                 bb.put(buffer, 0, readSize);
-                                dbBuf = new AudioTrack.SamplesBuffer(Sound.DEFAULT_AUDIOFORMAT, bb.position);
+                                dbBuf = new AudioTrack.SamplesBuffer(info.format, bb.position);
                                 dbSize = dbBuf.count;
                                 bb.flip();
                                 bb.get(dbBuf, 0, dbBuf.count);
@@ -224,7 +226,7 @@ public class RecordingStorage {
                             }
                             int readSizeLen = dbSize - readSizeUpdate;
                             if (readSizeLen > 0) {
-                                dbBuffer = new AudioTrack.SamplesBuffer(Sound.DEFAULT_AUDIOFORMAT, readSizeLen);
+                                dbBuffer = new AudioTrack.SamplesBuffer(info.format, readSizeLen);
                                 dbBuffer.put(dbBuf, readSizeUpdate, readSizeLen);
                             } else {
                                 dbBuffer = null;
@@ -295,10 +297,6 @@ public class RecordingStorage {
             thread = null;
         }
         sound.unsilent();
-    }
-
-    public RawSamples.Info getInfo() {
-        return new RawSamples.Info(sampleRate, Sound.getChannels(context));
     }
 
     // calcuale buffer length dynamically, this way we can reduce thread cycles when activity in background
