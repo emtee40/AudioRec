@@ -165,7 +165,7 @@ public class RecordingStorage {
 
                     while (!interrupt.get()) {
                         synchronized (bufferSizeLock) {
-                            if (buffer == null || buffer.size() != bufferSize)
+                            if (buffer == null || buffer.capacity != bufferSize)
                                 buffer = new AudioTrack.SamplesBuffer(info.format, bufferSize);
                         }
 
@@ -204,14 +204,14 @@ public class RecordingStorage {
                             int dbSize;
                             int readSizeUpdate;
                             if (dbBuffer != null) {
-                                AudioTrack.SamplesBuffer bb = new AudioTrack.SamplesBuffer(info.format, dbBuffer.position + readSize);
+                                AudioTrack.SamplesBuffer bb = new AudioTrack.SamplesBuffer(info.format, dbBuffer.pos + readSize);
                                 dbBuffer.flip();
                                 bb.put(dbBuffer);
                                 bb.put(buffer, 0, readSize);
-                                dbBuf = new AudioTrack.SamplesBuffer(info.format, bb.position);
-                                dbSize = dbBuf.count;
+                                dbBuf = new AudioTrack.SamplesBuffer(info.format, bb.pos);
+                                dbSize = dbBuf.capacity;
                                 bb.flip();
-                                bb.get(dbBuf, 0, dbBuf.count);
+                                bb.get(dbBuf, 0, dbBuf.capacity);
                             } else {
                                 dbBuf = buffer;
                                 dbSize = readSize;

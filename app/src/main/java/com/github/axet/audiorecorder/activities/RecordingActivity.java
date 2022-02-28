@@ -567,12 +567,12 @@ public class RecordingActivity extends AppCompatThemeActivity {
         int count = pitch.getMaxPitchCount(metrics.widthPixels);
 
         AudioTrack.SamplesBuffer buf = new AudioTrack.SamplesBuffer(rs.info.format, count * recording.samplesUpdateStereo);
-        long cut = recording.samplesTime * Sound.getChannels(this) - buf.count;
+        long cut = recording.samplesTime * Sound.getChannels(this) - buf.capacity;
 
         if (cut < 0)
             cut = 0;
 
-        rs.open(cut, buf.count);
+        rs.open(cut, buf.capacity);
         int len = rs.read(buf);
         rs.close();
 
