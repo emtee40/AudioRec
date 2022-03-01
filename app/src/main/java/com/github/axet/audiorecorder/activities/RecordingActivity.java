@@ -929,14 +929,14 @@ public class RecordingActivity extends AppCompatThemeActivity {
     boolean startRecording() {
         try {
             final SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(this);
-            String source = shared.getString(AudioApplication.PREFERENCE_SOURCE, getString(R.string.source_mic));
+            String source = shared.getString(AudioApplication.PREFERENCE_SOURCE, AudioApplication.PREFERENCE_SOURCE_MIC);
             int user;
-            if (source.equals(getString(R.string.source_raw))) {
+            if (source.equals(AudioApplication.PREFERENCE_SOURCE_RAW)) {
                 if (Sound.isUnprocessedSupported(this))
                     user = MediaRecorder.AudioSource.UNPROCESSED;
                 else
                     user = MediaRecorder.AudioSource.VOICE_RECOGNITION;
-            } else if (source.equals(this.getString(R.string.source_internal))) {
+            } else if (source.equals(AudioApplication.PREFERENCE_SOURCE_INTERNAL)) {
                 user = Sound.SOURCE_INTERNAL_AUDIO;
             } else {
                 user = MediaRecorder.AudioSource.MIC;

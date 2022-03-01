@@ -55,8 +55,8 @@ public class RecordingSourcePreferenceCompat extends ListPreference {
         CharSequence[] values = getEntryValues();
         ArrayList<CharSequence> tt = new ArrayList<>();
         ArrayList<CharSequence> vv = new ArrayList<>();
-        String raw = getContext().getString(R.string.source_raw);
-        String internal = getContext().getString(R.string.source_internal);
+        String raw = AudioApplication.PREFERENCE_SOURCE_RAW;
+        String internal = AudioApplication.PREFERENCE_SOURCE_INTERNAL;
         for (int i = 0; i < values.length; i++) {
             String v = values[i].toString();
             String t = text[i].toString();
