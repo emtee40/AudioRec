@@ -41,7 +41,7 @@ Android supports 16-bit PCM format or PCM float. Android recomends to use PCM fl
 
 * https://developer.android.com/reference/android/media/AudioFormat#encoding
 
-float mantisa is 23 bits (plus sign bit and float point bits) persition in range from 0..1 can hold about 1,065,353,215 unique numbers which is equivalent to 29 bits integer. When 24-bit PCM only gives you 2^24=16,777,216 unique values.
+float mantisa is 23 bits (plus sign bit and float point bits) persition in range from -1..1 can hold about 2130706431 unique numbers which is equivalent to 31 bits integer. When 24-bit PCM only gives you 2^24=16,777,216 unique values.
 
 # Adb commands
 
