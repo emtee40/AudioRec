@@ -11,6 +11,7 @@ import android.util.Log;
 import android.view.View;
 
 import com.github.axet.androidlibrary.app.NotificationManagerCompat;
+import com.github.axet.androidlibrary.app.Prefs;
 import com.github.axet.androidlibrary.widgets.NotificationChannelCompat;
 import com.github.axet.androidlibrary.widgets.RemoteNotificationCompat;
 import com.github.axet.audiolibrary.encoders.FormatFLAC;
@@ -26,6 +27,10 @@ public class AudioApplication extends com.github.axet.audiolibrary.app.MainAppli
     public static final String PREFERENCE_TARGET = "target";
     public static final String PREFERENCE_FLY = "fly";
     public static final String PREFERENCE_SOURCE = "bluetooth";
+    public static final String PREFERENCE_SOURCE_MIC = Prefs.PrefString(R.string.source_mic);
+    public static final String PREFERENCE_SOURCE_BLUETOOTH = Prefs.PrefString(R.string.source_bluetooth);
+    public static final String PREFERENCE_SOURCE_RAW = Prefs.PrefString(R.string.source_raw);
+    public static final String PREFERENCE_SOURCE_INTERNAL = Prefs.PrefString(R.string.source_internal);
 
     public static final String PREFERENCE_VERSION = "version";
 

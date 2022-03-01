@@ -32,10 +32,16 @@ For example:
 
 # Raw format
 
-  * Signed 16-bit PCM
+  * Signed 16-bit PCM or float (depends on user settings)
   * Big Endian
   * 1 or 2 channels (depends on user settings). First 2 bytes for left channel, Second 2 bytes for right channel.
   * 16hz to 48hz Sample Rate / Frequincy (depends on user settings)
+
+Android supports 16-bit PCM format or PCM float. Android recomends to use PCM float over 24-bit PCM format or 16-bit PCM if possible.
+
+* https://developer.android.com/reference/android/media/AudioFormat#encoding
+
+float mantisa is 23 bits (plus sign bit and float point bits) persition in range from -1..1 can hold about 2130706431 unique numbers which is equivalent to 31 bits integer. When 24-bit PCM only gives you 2^24=16,777,216 unique values.
 
 # Adb commands
 

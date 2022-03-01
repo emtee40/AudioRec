@@ -138,25 +138,6 @@ public class SettingsActivity extends AppCompatSettingsThemeActivity implements 
 
         void initPrefs(PreferenceManager pm, PreferenceScreen screen) {
             final Context context = screen.getContext();
-            ListPreference enc = (ListPreference) pm.findPreference(AudioApplication.PREFERENCE_ENCODING);
-            String v = enc.getValue();
-            CharSequence[] ee = Factory.getEncodingTexts(context);
-            CharSequence[] vv = Factory.getEncodingValues(context);
-            if (ee.length > 1) {
-                enc.setEntries(ee);
-                enc.setEntryValues(vv);
-
-                int i = enc.findIndexOfValue(v);
-                if (i == -1) {
-                    enc.setValueIndex(0);
-                } else {
-                    enc.setValueIndex(i);
-                }
-
-                bindPreferenceSummaryToValue(enc);
-            } else {
-                screen.removePreference(enc);
-            }
 
             bindPreferenceSummaryToValue(pm.findPreference(AudioApplication.PREFERENCE_RATE));
             bindPreferenceSummaryToValue(pm.findPreference(AudioApplication.PREFERENCE_THEME));
