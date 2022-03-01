@@ -84,11 +84,17 @@ public class EncodingStorage extends HashMap<File, EncodingStorage.Info> {
 
     public void load() {
         clear();
-        File file = storage.getTempEncoding().getParentFile();
-        load(file);
+        load(storage.getTempEncoding().getParentFile());
+        Context context = storage.getContext();
+        load(context.getCacheDir());
+        load(context.getExternalCacheDir());
+        load(Storage.getFilesDir(context, Storage.RAW));
+        load(context.getExternalFilesDir(Storage.RAW));
     }
 
     public void load(File storage) {
+        if (storage == null)
+            return;
         File[] ff = storage.listFiles(new FilenameFilter() {
             String start = Storage.getNameNoExt(Storage.TMP_ENC);
             String ext = "." + Storage.getExt(Storage.TMP_ENC);
