@@ -84,7 +84,6 @@ public class EncodingStorage extends HashMap<File, EncodingStorage.Info> {
 
     public void load() {
         clear();
-        load(storage.getTempEncoding().getParentFile());
         Context context = storage.getContext();
         load(context.getCacheDir());
         load(context.getExternalCacheDir());
@@ -111,7 +110,7 @@ public class EncodingStorage extends HashMap<File, EncodingStorage.Info> {
             try {
                 put(f, new Info(new JSONObject(FileUtils.readFileToString(j, Charset.defaultCharset()))));
             } catch (Exception e) {
-                Log.d(TAG, "unable to read json", e);
+                Log.d(TAG, "unable to read json " + j, e);
             }
         }
     }
