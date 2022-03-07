@@ -3,10 +3,12 @@ package com.github.axet.audiorecorder.widgets;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.TypedArray;
+import android.media.AudioManager;
 import android.os.Build;
 import android.preference.PreferenceManager;
 import android.support.v7.preference.ListPreference;
 import android.support.v7.preference.ListPreferenceDialogFragmentCompat;
+import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceViewHolder;
 import android.util.AttributeSet;
 
@@ -17,8 +19,9 @@ import com.github.axet.audiorecorder.app.Storage;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 
-public class RecordingSourcePreferenceCompat extends ListPreference {
+public class RecordingSourcePreferenceCompat extends com.github.axet.audiolibrary.widgets.RecordingSourcePreferenceCompat {
     public RecordingSourcePreferenceCompat(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
     }
@@ -35,45 +38,26 @@ public class RecordingSourcePreferenceCompat extends ListPreference {
         super(context);
     }
 
-    @Override
-    public boolean callChangeListener(Object newValue) {
-        update(newValue);
-        return super.callChangeListener(newValue);
+    public boolean isSourceSupported(String s) {
+        if (s.equals(AudioApplication.PREFERENCE_SOURCE_RAW) && !Sound.isUnprocessedSupported(getContext()))
+            return false;
+        if (s.equals(AudioApplication.PREFERENCE_SOURCE_INTERNAL) && Build.VERSION.SDK_INT < 29)
+            return false;
+        AudioManager am = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
+        if (s.equals(AudioApplication.PREFERENCE_SOURCE_BLUETOOTH) && !am.isBluetoothScoAvailableOffCall())
+            return false;
+        return true;
     }
 
     @Override
-    protected Object onGetDefaultValue(TypedArray a, int index) {
-        Object def = super.onGetDefaultValue(a, index);
-        update(def);
-        return def;
-    }
-
-    @Override
-    protected void onSetInitialValue(boolean restoreValue, Object defaultValue) {
-        super.onSetInitialValue(restoreValue, defaultValue);
-        CharSequence[] text = getEntries();
-        CharSequence[] values = getEntryValues();
-        ArrayList<CharSequence> tt = new ArrayList<>();
-        ArrayList<CharSequence> vv = new ArrayList<>();
-        String raw = AudioApplication.PREFERENCE_SOURCE_RAW;
-        String internal = AudioApplication.PREFERENCE_SOURCE_INTERNAL;
-        for (int i = 0; i < values.length; i++) {
-            String v = values[i].toString();
-            String t = text[i].toString();
-            if (v.equals(raw) && !Sound.isUnprocessedSupported(getContext()))
+    public LinkedHashMap<String, String> filter(LinkedHashMap<String, String> mm) {
+        LinkedHashMap<String, String> map = new LinkedHashMap<>();
+        for (String v : mm.keySet()) {
+            String t = mm.get(v);
+            if (!isSourceSupported(v))
                 continue;
-            if (v.equals(internal) && Build.VERSION.SDK_INT < 29)
-                continue;
-            vv.add(v);
-            tt.add(t);
+            map.put(v, t);
         }
-        setEntryValues(vv.toArray(new CharSequence[0]));
-        setEntries(tt.toArray(new CharSequence[0]));
-        update(getValue()); // defaultValue null after defaults set
-    }
-
-    public void update(Object value) {
-        String v = (String) value;
-        setSummary(v);
+        return map;
     }
 }

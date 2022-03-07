@@ -152,13 +152,6 @@ public class SettingsActivity extends AppCompatSettingsThemeActivity implements 
             if (Build.VERSION.SDK_INT >= 21)
                 s.setStorageAccessFramework(this, RESULT_STORAGE);
 
-            AudioManager am = (AudioManager) context.getSystemService(AUDIO_SERVICE);
-            Preference bluetooth = pm.findPreference(AudioApplication.PREFERENCE_SOURCE);
-            if (!am.isBluetoothScoAvailableOffCall()) {
-                bluetooth.setVisible(false);
-            }
-            bindPreferenceSummaryToValue(bluetooth);
-
             Preference p = pm.findPreference(AudioApplication.PREFERENCE_CALL);
             p.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
                 @Override
