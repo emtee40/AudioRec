@@ -5,6 +5,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.MediaRecorder;
 import android.os.Build;
 import android.support.v7.preference.PreferenceManager;
 import android.util.Log;
@@ -14,6 +15,7 @@ import com.github.axet.androidlibrary.app.NotificationManagerCompat;
 import com.github.axet.androidlibrary.app.Prefs;
 import com.github.axet.androidlibrary.widgets.NotificationChannelCompat;
 import com.github.axet.androidlibrary.widgets.RemoteNotificationCompat;
+import com.github.axet.audiolibrary.app.Sound;
 import com.github.axet.audiolibrary.encoders.FormatFLAC;
 import com.github.axet.audiolibrary.encoders.FormatM4A;
 import com.github.axet.audiolibrary.encoders.FormatOGG;
@@ -144,5 +146,22 @@ public class AudioApplication extends com.github.axet.audiolibrary.app.MainAppli
         edit.remove(PREFERENCE_SORT);
         edit.putInt(PREFERENCE_VERSION, 4);
         edit.commit();
+    }
+
+    public int getSource() {
+        final SharedPreferences shared = android.preference.PreferenceManager.getDefaultSharedPreferences(this);
+        String source = shared.getString(AudioApplication.PREFERENCE_SOURCE, AudioApplication.PREFERENCE_SOURCE_MIC);
+        int user;
+        if (source.equals(AudioApplication.PREFERENCE_SOURCE_RAW)) {
+            if (Sound.isUnprocessedSupported(this))
+                user = MediaRecorder.AudioSource.UNPROCESSED;
+            else
+                user = MediaRecorder.AudioSource.VOICE_RECOGNITION;
+        } else if (source.equals(AudioApplication.PREFERENCE_SOURCE_INTERNAL)) {
+            user = Sound.SOURCE_INTERNAL_AUDIO;
+        } else {
+            user = MediaRecorder.AudioSource.MIC;
+        }
+        return user;
     }
 }
