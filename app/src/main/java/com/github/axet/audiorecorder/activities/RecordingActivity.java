@@ -136,7 +136,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
             if (msg.what == RecordingStorage.END) {
                 pitch.drawEnd();
                 if (!recording.interrupt.get()) {
-                    stopRecording(getString(R.string.recording_status_pause));
+                    stopRecording(getString(R.string.recording_status_pause), false);
                     String text = "Error reading from stream";
                     if (Build.VERSION.SDK_INT >= 28)
                         muted = RecordingActivity.startActivity(RecordingActivity.this, text, getString(R.string.mic_muted_pie));
@@ -269,7 +269,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
         @Override
         public void onDisconnected() {
             if (recording.thread != null) {
-                stopRecording(getString(R.string.hold_by_bluetooth));
+                stopRecording(getString(R.string.hold_by_bluetooth), false);
                 super.onDisconnected();
             }
         }
@@ -305,7 +305,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
                 case TelephonyManager.CALL_STATE_OFFHOOK:
                     wasRinging = true;
                     if (recording.thread != null) {
-                        stopRecording(getString(R.string.hold_by_call));
+                        stopRecording(getString(R.string.hold_by_call), false);
                         pausedByCall = true;
                     }
                     break;
@@ -452,7 +452,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
                     msg = getString(R.string.recording_status_recording);
                 else
                     msg = getString(R.string.recording_status_encoding);
-                stopRecording(msg);
+                stopRecording(msg, true);
                 try {
                     encoding(new Runnable() {
                         @Override
@@ -476,7 +476,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
         String a = intent.getAction();
         if (a != null && a.equals(START_PAUSE)) { // pretend we already start it
             start = false;
-            stopRecording(getString(R.string.recording_status_pause));
+            stopRecording(getString(R.string.recording_status_pause), false);
         }
         onIntent(intent);
     }
@@ -594,7 +594,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
     void pauseButton() {
         if (recording.thread != null) {
             receiver.errors = false;
-            stopRecording(getString(R.string.recording_status_pause));
+            stopRecording(getString(R.string.recording_status_pause), false);
             receiver.stopBluetooth();
             headset(true, false);
         } else {
@@ -619,7 +619,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
                 if (receiver.isRecordingReady())
                     startRecording();
                 else
-                    stopRecording(getString(R.string.hold_by_bluetooth));
+                    stopRecording(getString(R.string.hold_by_bluetooth), false);
             }
         }
 
@@ -649,14 +649,19 @@ public class RecordingActivity extends AppCompatThemeActivity {
             progress.onPause();
     }
 
-    void stopRecording(String status) {
+    void stopRecording(String status, boolean stop) {
         setState(status);
         pause.setImageResource(R.drawable.ic_mic_24dp);
         pause.setContentDescription(getString(R.string.record_button));
 
         stopRecording();
 
-        RecordingService.startService(this, Storage.getName(this, recording.targetUri), false, duration);
+        if (stop) {
+            receiver.close();
+            RecordingService.stop(this, Storage.getName(this, recording.targetUri), duration);
+        } else {
+            RecordingService.startService(this, Storage.getName(this, recording.targetUri), false, duration);
+        }
 
         final SharedPreferences shared = PreferenceManager.getDefaultSharedPreferences(this);
 
@@ -906,7 +911,7 @@ public class RecordingActivity extends AppCompatThemeActivity {
             progress = null;
         }
 
-        RecordingService.stopRecording(this);
+        RecordingService.stop(this, null, null);
         ControlsService.startIfEnabled(this);
 
         if (pscl != null) {

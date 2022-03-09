@@ -30,6 +30,7 @@ public class BluetoothReceiver extends BroadcastReceiver {
     public boolean errors = false; // show errors
     public boolean connecting = false;
     public IntentFilter filter = new IntentFilter();
+    public AudioManager am;
 
     public Runnable connected = new Runnable() {
         @Override
@@ -67,10 +68,14 @@ public class BluetoothReceiver extends BroadcastReceiver {
     public void registerReceiver(Context context) {
         this.context = context;
         context.registerReceiver(this, filter);
+        am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
     }
 
     public void close() {
-        context.unregisterReceiver(this);
+        if (context != null) {
+            context.unregisterReceiver(this);
+            context = null;
+        }
     }
 
     public void onConnected() {
@@ -109,7 +114,6 @@ public class BluetoothReceiver extends BroadcastReceiver {
 
     @SuppressWarnings("deprecation")
     public boolean startBluetooth() {
-        AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         if (am.isBluetoothScoAvailableOffCall()) {
             if (!bluetoothStart) {
                 if (Build.VERSION.SDK_INT == 21) {
@@ -130,7 +134,6 @@ public class BluetoothReceiver extends BroadcastReceiver {
 
     public void stopBluetooth() {
         handler.removeCallbacks(connected);
-        AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         if (bluetoothStart) {
             bluetoothStart = false;
             am.stopBluetoothSco();

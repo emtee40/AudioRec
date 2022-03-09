@@ -4,9 +4,11 @@ import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
@@ -39,8 +41,6 @@ public class RecordingService extends PersistentService {
     public static final int NOTIFICATION_RECORDING_ICON = 1;
 
     public static String SHOW_ACTIVITY = RecordingService.class.getCanonicalName() + ".SHOW_ACTIVITY";
-    public static String PAUSE_BUTTON = RecordingService.class.getCanonicalName() + ".PAUSE_BUTTON";
-    public static String RECORD_BUTTON = RecordingService.class.getCanonicalName() + ".RECORD_BUTTON";
 
     static {
         OptimizationPreferenceCompat.REFRESH = AlarmManager.MIN1;
@@ -82,12 +82,11 @@ public class RecordingService extends PersistentService {
         );
     }
 
-    public static void stopRecording(Context context) {
-        stop(context);
-    }
-
-    public static void stop(Context context) {
-        stop(context, new Intent(context, RecordingService.class));
+    public static void stop(Context context, String targetFile, String duration) {
+        stop(context, new Intent(context, RecordingService.class)
+                .putExtra("targetFile", targetFile)
+                .putExtra("duration", duration)
+                .putExtra("stop", true));
     }
 
     public RecordingService() {
@@ -120,9 +119,10 @@ public class RecordingService extends PersistentService {
 
                     @SuppressLint("RestrictedApi")
                     public Notification build(Intent intent) {
+                        Log.d(TAG, "" + intent);
                         String targetFile = intent.getStringExtra("targetFile");
                         boolean recording = intent.getBooleanExtra("recording", false);
-                        boolean encoding = false;
+                        boolean stop = intent.getBooleanExtra("stop", false);
                         String duration = intent.getStringExtra("duration");
 
                         PendingIntent main;
@@ -148,8 +148,7 @@ public class RecordingService extends PersistentService {
                                         RemoteViewsCompat.mergeRemoteViews(icon.notification.bigContentView, a);
                                     }
                                     return icon.notification;
-                                } catch (RuntimeException e) {
-                                    Log.d(TAG, "merge failed", e);
+                                } catch (RuntimeException ignore) { // merge view failed
                                 }
                             }
                         }
@@ -157,22 +156,21 @@ public class RecordingService extends PersistentService {
                         builder = new RemoteNotificationCompat.Builder(context, R.layout.notifictaion);
                         builder.setViewVisibility(R.id.notification_record, View.GONE);
                         builder.setViewVisibility(R.id.notification_pause, View.VISIBLE);
-                        main = PendingIntent.getService(context, 0, new Intent(context, RecordingService.class)
-                                .setAction(SHOW_ACTIVITY)
-                                .putExtra("targetFile", targetFile)
-                                .putExtra("recording", recording), PendingIntent.FLAG_UPDATE_CURRENT);
-
-                        PendingIntent pe = PendingIntent.getService(context, 0,
-                                new Intent(context, RecordingService.class).setAction(PAUSE_BUTTON),
+                        main = PendingIntent.getActivity(context, 0, new Intent(context, MainActivity.class),
                                 PendingIntent.FLAG_UPDATE_CURRENT);
 
-                        PendingIntent re = PendingIntent.getService(context, 0,
-                                new Intent(context, RecordingService.class).setAction(RECORD_BUTTON),
+                        PendingIntent pe = PendingIntent.getBroadcast(context, 0,
+                                new Intent(RecordingActivity.PAUSE_BUTTON),
                                 PendingIntent.FLAG_UPDATE_CURRENT);
 
-                        if (encoding) {
+                        PendingIntent re = PendingIntent.getBroadcast(context, 0,
+                                new Intent(RecordingActivity.PAUSE_BUTTON),
+                                PendingIntent.FLAG_UPDATE_CURRENT);
+
+                        if (stop) { // service exiting
                             builder.setViewVisibility(R.id.notification_pause, View.GONE);
                             title = getString(R.string.encoding_title);
+                            main = null;
                         }
 
                         builder.setOnClickPendingIntent(R.id.notification_pause, pe);
@@ -210,11 +208,6 @@ public class RecordingService extends PersistentService {
         String a = intent.getAction();
         if (a == null) {
             optimization.icon.updateIcon(intent);
-        } else if (a.equals(PAUSE_BUTTON)) {
-            Intent i = new Intent(RecordingActivity.PAUSE_BUTTON);
-            sendBroadcast(i);
-        } else if (a.equals(RECORD_BUTTON)) {
-            RecordingActivity.startActivity(this, false);
         } else if (a.equals(SHOW_ACTIVITY)) {
             ProximityShader.closeSystemDialogs(this);
             if (intent.getStringExtra("targetFile") == null)
