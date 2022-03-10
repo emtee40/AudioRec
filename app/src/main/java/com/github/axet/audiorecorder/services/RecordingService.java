@@ -47,6 +47,7 @@ public class RecordingService extends PersistentService {
     }
 
     Storage storage; // for storage path
+    BroadcastReceiver receiver;
 
     public static void startIfPending(Context context) { // if recording pending or controls enabled
         Storage storage = new Storage(context);
@@ -95,6 +96,19 @@ public class RecordingService extends PersistentService {
     @Override
     public void onCreate() {
         super.onCreate();
+        receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String a = intent.getAction();
+                if (a != null && a.equals(SHOW_ACTIVITY))
+                    ProximityShader.closeSystemDialogs(context);
+                if (intent.getStringExtra("targetFile") == null)
+                    MainActivity.startActivity(context);
+                else
+                    RecordingActivity.startActivity(context, !intent.getBooleanExtra("recording", false));
+            }
+        };
+        registerReceiver(receiver, new IntentFilter(SHOW_ACTIVITY));
     }
 
     @Override
@@ -156,7 +170,9 @@ public class RecordingService extends PersistentService {
                         builder = new RemoteNotificationCompat.Builder(context, R.layout.notifictaion);
                         builder.setViewVisibility(R.id.notification_record, View.GONE);
                         builder.setViewVisibility(R.id.notification_pause, View.VISIBLE);
-                        main = PendingIntent.getActivity(context, 0, new Intent(context, MainActivity.class),
+                        main = PendingIntent.getBroadcast(context, 0, new Intent(SHOW_ACTIVITY)
+                                        .putExtra("targetFile", targetFile)
+                                        .putExtra("recroding", recording),
                                 PendingIntent.FLAG_UPDATE_CURRENT);
 
                         PendingIntent pe = PendingIntent.getBroadcast(context, 0,
@@ -214,6 +230,15 @@ public class RecordingService extends PersistentService {
                 MainActivity.startActivity(this);
             else
                 RecordingActivity.startActivity(this, !intent.getBooleanExtra("recording", false));
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (receiver != null) {
+            unregisterReceiver(receiver);
+            receiver = null;
         }
     }
 }
