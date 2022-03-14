@@ -9,8 +9,8 @@ android {
         applicationId "com.github.axet.audiorecorder"
         minSdkVersion 9
         targetSdkVersion 30
-        versionCode 365
-        versionName "3.5.9"
+        versionCode 366
+        versionName "3.5.10"
     }
     signingConfigs {
         release {
@@ -53,7 +53,7 @@ android {
 
 dependencies {
     testImplementation 'junit:junit:4.12'
-    implementation ('com.github.axet:android-audio-library:1.1.10') // implementation project(':android-audio-library')
+    implementation ('com.github.axet:android-audio-library:1.1.12') // implementation project(':android-audio-library')
     implementation ('com.github.axet:wget:1.7.0') { exclude group: 'org.json', module: 'json' }
     assets('com.google.android.exoplayer:exoplayer:2.7.3') { exclude group: 'com.android.support' }
 }
