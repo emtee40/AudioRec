@@ -97,11 +97,6 @@ public class SettingsActivity extends AppCompatSettingsThemeActivity implements 
         }
         if (key.equals(AudioApplication.PREFERENCE_STORAGE))
             storage.migrateLocalStorageDialog(this);
-        if (key.equals(AudioApplication.PREFERENCE_RATE)) {
-            int sampleRate = Integer.parseInt(sharedPreferences.getString(AudioApplication.PREFERENCE_RATE, ""));
-            if (sampleRate != Sound.getValidRecordRate(Sound.getAudioFormat(this), Sound.getInMode(this), sampleRate))
-                Toast.Text(this, "Not supported Hz");
-        }
     }
 
     @Override
