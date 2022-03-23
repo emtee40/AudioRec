@@ -2,6 +2,7 @@
     <string name="app_name">Диктофон</string>
 
     <string-array name="themes_text">
+        <item>@string/system_default</item>
         <item>Тема Светлая</item>
         <item>Тема Темная</item>
     </string-array>
