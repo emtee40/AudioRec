@@ -18,12 +18,6 @@
         <item>Internal Audio</item>
     </string-array>
 
-    <string-array name="themes_text">
-        <item>@string/system_default</item>
-        <item>Theme White</item>
-        <item>Theme Dark</item>
-    </string-array>
-
     <string-array name="channels_text">
         <item>Mono (default)</item>
         <item>Stereo</item>
