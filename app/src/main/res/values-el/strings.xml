@@ -15,10 +15,6 @@
         <item>Bluetooth</item>
         <item>Internal Audio</item>
     </string-array>
-    <string-array name="themes_text">
-        <item>Φωτεινό</item>
-        <item>Σκοτεινό</item>
-    </string-array>
     <string-array name="channels_text">
         <item>Μονοφωνικό (προεπιλογή)</item>
         <item>Στερεοφωνικό</item>

@@ -18,11 +18,6 @@
         <item>Internal Audio</item>
     </string-array>
 
-    <string-array name="themes_text">
-        <item>Theme Hell</item>
-        <item>Theme Dunkel</item>
-    </string-array>
-
     <string-array name="channels_text">
         <item>Mono (Standard)</item>
         <item>Stereo</item>

@@ -6,6 +6,7 @@
         <item>Bluetooth</item>
         <item>Internal Audio</item>
     </string-array>
+
     <string name="app_name">Audio Optager</string>
     <string name="auto_close">Auto luk om (%1$d)</string>
     <string name="recording_list_is_empty">Optagelseslisten er tom\n\nKlik Optag for at starte optagelse</string>

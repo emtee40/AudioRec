@@ -17,12 +17,7 @@
         <item>蓝牙</item>
         <item>Internal Audio</item>
     </string-array>
-
-    <string-array name="themes_text">
-        <item>亮色主题</item>
-        <item>暗色主题</item>
-    </string-array>
-
+\
     <string-array name="channels_text">
         <item>单声道 (默认)</item>
         <item>立体声</item>
