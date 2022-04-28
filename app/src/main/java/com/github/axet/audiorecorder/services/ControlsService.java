@@ -204,7 +204,7 @@ public class ControlsService extends PersistentService {
             @Override
             public void updateIcon() {
                 super.updateIcon();
-                controls.updateIcon(null);
+                controls.updateIcon((Intent) null);
             }
 
             @Override
